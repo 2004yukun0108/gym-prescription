@@ -1,0 +1,441 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>食事記録</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{
+  --ground:#EEF0EC; --surface:#FFFFFF; --sunk:#E4E7E1; --ink:#15201B; --muted:#5B6760; --line:#D3D8D1;
+  --accent:#1D55C4; --accent-soft:#DCE6FA; --accent-ink:#FFFFFF;
+  --plate:#E5B017; --plate-ink:#2A2000;
+  --good:#23845A; --good-soft:#DDF1E6; --warn:#B7560E; --warn-soft:#FBEBDD; --bad:#C23A2E; --bad-soft:#F9E1DE;
+  --display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0F1412; --surface:#182019; --sunk:#111815; --ink:#E7ECE8; --muted:#98A49D; --line:#2A342F;
+    --accent:#7AA2FF; --accent-soft:#1C2A4A; --accent-ink:#0B1426;
+    --plate:#F0C33A; --plate-ink:#241B00;
+    --good:#5CC792; --good-soft:#15301F; --warn:#F0A060; --warn-soft:#3A2412; --bad:#F07F74; --bad-soft:#3A1A17;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0F1412; --surface:#182019; --sunk:#111815; --ink:#E7ECE8; --muted:#98A49D; --line:#2A342F;
+  --accent:#7AA2FF; --accent-soft:#1C2A4A; --accent-ink:#0B1426;
+  --plate:#F0C33A; --plate-ink:#241B00;
+  --good:#5CC792; --good-soft:#15301F; --warn:#F0A060; --warn-soft:#3A2412; --bad:#F07F74; --bad-soft:#3A1A17;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.7;padding-inline:16px;padding-block:0 48px}
+h1,h2,h3,h4{margin:0;text-wrap:balance;line-height:1.35}
+p{margin:0}
+.wrap{max-width:1080px;margin:0 auto}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+.top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding-block:22px 18px;border-bottom:2px solid var(--ink);margin-bottom:22px}
+.top h1{font-family:var(--display);font-weight:400;font-size:30px;letter-spacing:.02em}
+.top h1 span{color:var(--accent)}
+.top p{color:var(--muted);font-size:14px;flex:1;min-width:200px}
+.back{font-size:13.5px;font-weight:700;color:var(--accent);text-decoration:none;white-space:nowrap}
+.back:hover{text-decoration:underline}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.banner{font-size:14px;padding:14px 16px;border-radius:8px;border:1px dashed var(--muted);color:var(--muted)}
+.banner a{color:var(--accent);font-weight:700}
+.small{font-size:12.5px;color:var(--muted)}
+
+input,select,button{font:inherit;color:inherit}
+input[type=text],input[type=number],input[type=date],select{width:100%;padding:9px 12px;background:var(--sunk);border:1px solid var(--line);border-radius:8px;font-size:15px}
+input[type=number]{font-family:var(--mono);font-weight:600}
+input:focus-visible,select:focus-visible,button:focus-visible,.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+label.lbl,.lbl{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em;display:block;margin-bottom:5px}
+
+/* targets */
+.targets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(150px,auto);gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:22px}
+.targets>div{padding:10px 14px;border-left:1px solid var(--line)}
+.targets>div:first-child{border-left:0;padding-left:0}
+.targets .k{font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.05em}
+.targets .v{font:600 20px var(--mono)}
+.targets .v small{font:500 12px var(--body);color:var(--muted);margin-left:3px}
+@media (max-width:720px){.targets{grid-template-columns:1fr 1fr}.targets>div:nth-child(odd){border-left:0;padding-left:0}.targets>div:nth-child(n+3){border-top:1px solid var(--line)}.targets>div:last-child{grid-column:1/-1}}
+
+/* week */
+.weeknav{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.weeknav select{flex:1;font-weight:700}
+.navb{width:42px;height:42px;flex:none;border:1px solid var(--line);background:var(--surface);border-radius:8px;cursor:pointer;font-size:18px}
+.navb:disabled{opacity:.35;cursor:default}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.dayb{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 4px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
+.dayb .d{font-size:11.5px;color:var(--muted);font-weight:700}
+.dayb .kc{font:600 13px var(--mono)}
+.dayb .kc.none{color:var(--muted);font-weight:500}
+.dayb .bar{width:80%;height:4px;border-radius:2px;background:var(--sunk);overflow:hidden;margin-top:3px}
+.dayb .bar i{display:block;height:100%;background:var(--good)}
+.dayb .bar i.over{background:var(--warn)}
+.dayb .today{font-size:10px;letter-spacing:.06em;color:var(--accent);font-weight:700}
+.dayb[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.weeksum{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:10px}
+.weeksum b{font-family:var(--mono);color:var(--ink);font-weight:600}
+
+/* day */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px;align-items:start;margin-top:24px}
+@media (max-width:880px){.layout{grid-template-columns:1fr}}
+.dayhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.dayhead h2{font-family:var(--display);font-weight:400;font-size:22px}
+.total .big{font:600 34px var(--mono);line-height:1.1}
+.total .big small{font:500 14px var(--body);color:var(--muted);margin-left:4px}
+.meter{height:10px;border-radius:5px;background:var(--sunk);overflow:hidden;margin:8px 0 6px}
+.meter i{display:block;height:100%;background:var(--good)}
+.meter i.over{background:var(--warn)}
+.verdict{font-size:13.5px;font-weight:700}
+.verdict.good{color:var(--good)}.verdict.warn{color:var(--warn)}.verdict.none{color:var(--muted)}
+.pfc{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.pfc .row{display:grid;grid-template-columns:78px minmax(0,1fr) 92px;gap:10px;align-items:center;font-size:13px}
+.pfc .row .m{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden}
+.pfc .row .m i{display:block;height:100%}
+.pfc .row .n{text-align:right;font-family:var(--mono);font-size:12.5px}
+
+.meals{display:flex;flex-direction:column;gap:12px;margin-top:18px}
+.meal{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px}
+.meal h3{font-size:14px;display:flex;justify-content:space-between}
+.meal h3 span{font:600 13px var(--mono);color:var(--muted)}
+.meal ul{list-style:none;margin:6px 0 0;padding:0}
+.meal li{display:grid;grid-template-columns:minmax(0,1fr) auto 32px;gap:8px;align-items:center;padding:6px 0;border-top:1px dotted var(--line);font-size:14px}
+.meal li .q{color:var(--muted);font-size:12.5px;margin-left:4px}
+.meal li .k{font:600 14px var(--mono);text-align:right}
+.meal .empty{font-size:12.5px;color:var(--muted);margin-top:4px}
+.del{width:32px;height:32px;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:6px;font-size:16px}
+.del:hover{background:var(--bad-soft);color:var(--bad)}
+
+/* add form */
+@media (min-width:881px){.addp{position:sticky;top:16px}}
+.addp h2{font-size:15px;margin-bottom:12px}
+.seg{display:flex;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:3px;gap:3px}
+.seg label{flex:1;position:relative;cursor:pointer}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg span{display:block;text-align:center;padding:6px 4px;border-radius:6px;font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap}
+.seg input:checked+span{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgb(0 0 0/.12)}
+.f{margin-top:12px}
+.qtyrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+.preview{font:600 14px var(--mono);color:var(--accent);padding-bottom:10px;white-space:nowrap}
+.custom{margin-top:12px;padding:12px;border-radius:8px;background:var(--warn-soft);display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.custom p{grid-column:1/-1;font-size:12.5px;color:var(--warn);font-weight:700}
+.custom .full{grid-column:1/-1}
+.btn{margin-top:14px;width:100%;padding:12px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:700 15px var(--body);cursor:pointer;letter-spacing:.05em}
+.btn:hover{filter:brightness(1.08)}
+.msg{margin-top:10px;font-size:13px;padding:8px 12px;border-radius:8px;background:var(--bad-soft);color:var(--bad)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:4px 11px;font-size:12.5px;cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.foot{margin-top:28px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;max-width:70ch}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>食事<span>記録</span></h1>
+    <p>食べたものを選ぶだけで、おおよそのカロリーとPFCを計算します。</p>
+    <a class="back" href="index.html">← プランに戻る</a>
+  </header>
+  <main id="app"></main>
+  <p class="foot">カロリーは一般的な1人前の目安値です。店・レシピ・量によって実際の値は変わるため、大まかな把握に使ってください。</p>
+</div>
+
+<datalist id="foodlist"></datalist>
+
+<script>
+const $ = s => document.querySelector(s);
+const DOW = ['日','月','火','水','木','金','土'];
+const MEALS = ['朝食','昼食','夕食','間食'];
+
+/* ---------- 食品データ（1人前の目安） [名前, 量, kcal, P, F, C] ---------- */
+const FOODS = [
+  ['ご飯','茶碗1杯 150g',234,3.8,0.5,55.7],
+  ['ご飯 大盛り','250g',390,6.3,0.8,92.8],
+  ['おにぎり','1個',180,4.5,1.5,37],
+  ['食パン','6枚切り1枚',149,5.3,2.5,27.8],
+  ['ロールパン','1個',93,3,2.7,14.6],
+  ['菓子パン','1個',350,7,14,50],
+  ['うどん','1玉',219,6,0.9,49.7],
+  ['そば','1玉',260,9.6,2,52],
+  ['パスタ','乾麺100g',347,12.9,1.8,73.1],
+  ['オートミール','30g',114,4.1,1.7,20.7],
+  ['グラノーラ','40g',180,3,6,28],
+  ['鶏むね肉（皮なし）','100g',105,23.3,1.9,0.1],
+  ['鶏もも肉（皮つき）','100g',190,16.6,14.2,0],
+  ['ささみ','1本 50g',49,12,0.4,0],
+  ['サラダチキン','1個',120,25,1.5,0.5],
+  ['豚ロース','100g',248,19.3,19.2,0.2],
+  ['豚こま切れ','100g',220,18,16,0],
+  ['牛もも','100g',196,19.5,13.3,0.4],
+  ['合いびき肉','100g',251,17.3,20.5,0.2],
+  ['ハム','2枚',42,3.7,2.8,0.2],
+  ['ベーコン','2枚',142,4.5,13.7,0.1],
+  ['ウインナー','2本',128,4.6,12,1.2],
+  ['鮭','1切れ',106,17.8,3.3,0.1],
+  ['サバ塩焼き','1切れ',211,16.5,15.4,0.2],
+  ['マグロ刺身（赤身）','80g',92,21,0.2,0.1],
+  ['ツナ缶（ノンオイル）','1缶',50,11.5,0.5,0.1],
+  ['ツナ缶（油漬）','1缶',185,12,16,0],
+  ['卵','1個',71,6.1,5.1,0.2],
+  ['納豆','1パック',86,7.4,4.5,5.4],
+  ['木綿豆腐','150g',110,10.5,7.4,2.4],
+  ['絹ごし豆腐','150g',84,8,5.3,3],
+  ['牛乳','コップ1杯 200ml',126,6.6,7.6,9.6],
+  ['豆乳','200ml',88,7.2,4,6.2],
+  ['ヨーグルト（無糖）','100g',56,3.6,3,4.9],
+  ['ギリシャヨーグルト','1個',90,10,0,12],
+  ['チーズ','スライス1枚',56,4.1,4.7,0.2],
+  ['プロテイン','1杯 30g',115,22,1.5,3],
+  ['サラダ','小鉢1皿',20,1,0.1,4],
+  ['ブロッコリー','50g',17,2.2,0.3,3.3],
+  ['味噌汁','1杯',40,2.5,1.5,4],
+  ['野菜炒め','1皿',200,5,15,10],
+  ['バナナ','1本',93,1.1,0.2,22.5],
+  ['りんご','1/2個',80,0.2,0.3,21],
+  ['みかん','1個',40,0.6,0.1,10],
+  ['カレーライス','1皿',750,18,25,110],
+  ['牛丼','並盛り',650,20,20,95],
+  ['親子丼','1杯',700,30,18,100],
+  ['チャーハン','1皿',650,15,25,90],
+  ['オムライス','1皿',700,20,28,90],
+  ['ラーメン','1杯',500,20,15,70],
+  ['パスタ（ミートソース）','1皿',650,25,20,90],
+  ['ざるそば','1枚',300,13,2,60],
+  ['から揚げ','3個',250,18,15,10],
+  ['とんかつ','1枚',450,22,32,15],
+  ['ハンバーグ','1個',400,20,28,15],
+  ['生姜焼き','1人前',350,20,25,10],
+  ['焼き魚定食','1人前',600,30,15,85],
+  ['餃子','6個',330,12,18,30],
+  ['コンビニ弁当（幕の内）','1個',700,22,25,95],
+  ['サンドイッチ','1パック',330,12,18,30],
+  ['ハンバーガー','1個',260,13,9,30],
+  ['フライドポテト','Mサイズ',410,5,21,51],
+  ['ピザ','Mサイズ1切れ',200,8,8,22],
+  ['ポテトチップス','1袋 60g',330,3,21,32],
+  ['チョコレート','板チョコ半分',140,1.7,8.5,14],
+  ['ショートケーキ','1個',330,5,18,38],
+  ['アイスクリーム','1個',200,4,12,22],
+  ['せんべい','2枚',100,2,0.5,22],
+  ['ナッツ','ひとつかみ 25g',150,5,13,5],
+  ['プロテインバー','1本',200,15,8,17],
+  ['ビール','350ml缶',140,1,0,11],
+  ['チューハイ','350ml缶',180,0,0,20],
+  ['ワイン','グラス1杯',88,0.1,0,1.8],
+  ['日本酒','1合',185,0.5,0,8],
+  ['コーラ','500ml',225,0,0,56],
+  ['缶コーヒー（加糖）','1本',70,1.5,1.5,12],
+  ['カフェラテ','Mサイズ',130,6.5,7,10],
+  ['オレンジジュース','200ml',90,1.5,0,22],
+];
+
+/* ---------- 保存 ---------- */
+function store(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function load(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+
+const plan = load('gym-plan');
+let start = load('gym-start');
+let meals = load('gym-meals') || {};       // { 'YYYY-MM-DD': [{id,m,n,q,k,p,f,c}] }
+let myFoods = load('gym-myfoods') || [];   // [[名前, '', kcal, P, F, C]]
+let recent = load('gym-recent') || [];     // ラベルの配列
+
+const label = f => f[1] ? `${f[0]}（${f[1]}）` : f[0];
+let byLabel = {};
+function indexFoods(){
+  byLabel = {};
+  [...FOODS, ...myFoods].forEach(f => byLabel[label(f)] = f);
+  $('#foodlist').innerHTML = Object.keys(byLabel).map(l=>`<option value="${esc(l)}">`).join('');
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- 日付 ---------- */
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); };
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const md = d => `${d.getMonth()+1}/${d.getDate()}`;
+const todayIso = iso(new Date());
+
+let week = 0, day = todayIso;
+const weeksTotal = () => Math.max(1, Math.min(plan.weeks || 12, 156));
+const weekStart = w => addDays(parse(start), w*7);
+
+function sums(list){
+  return (list||[]).reduce((a,e)=>({k:a.k+e.k*e.q, p:a.p+e.p*e.q, f:a.f+e.f*e.q, c:a.c+e.c*e.q}), {k:0,p:0,f:0,c:0});
+}
+const r0 = v => Math.round(v).toLocaleString('ja-JP');
+
+/* ---------- 描画 ---------- */
+function render(){
+  const T = plan;
+  const ws = weekStart(week);
+  const days = Array.from({length:7},(_,i)=>addDays(ws,i));
+  let h = `<section class="targets">
+    <div><div class="k">1日の目標</div><div class="v">${r0(T.kcal)}<small>kcal</small></div></div>
+    <div><div class="k">タンパク質</div><div class="v">${T.protein}<small>g</small></div></div>
+    <div><div class="k">脂質</div><div class="v">${T.fat}<small>g</small></div></div>
+    <div><div class="k">炭水化物</div><div class="v">${T.carb}<small>g</small></div></div>
+    <div><label class="lbl" for="start">記録の開始日</label><input type="date" id="start" value="${start}"></div>
+  </section>`;
+
+  h += `<div class="weeknav">
+    <button class="navb" data-w="-1" aria-label="前の週" ${week===0?'disabled':''}>‹</button>
+    <select id="weeksel" aria-label="週を選ぶ">${Array.from({length:weeksTotal()},(_,w)=>{
+      const a = weekStart(w), b = addDays(a,6);
+      return `<option value="${w}" ${w===week?'selected':''}>第${w+1}週（${md(a)}〜${md(b)}）</option>`;
+    }).join('')}</select>
+    <button class="navb" data-w="1" aria-label="次の週" ${week===weeksTotal()-1?'disabled':''}>›</button>
+  </div>`;
+
+  h += `<div class="week" role="group" aria-label="この週の7日間">` + days.map(d=>{
+    const k = iso(d), s = sums(meals[k]), has = (meals[k]||[]).length>0;
+    const pct = Math.min(100, s.k/T.kcal*100), over = s.k > T.kcal*1.1;
+    return `<button class="dayb" data-day="${k}" aria-pressed="${k===day}">
+      <span class="d">${md(d)}（${DOW[d.getDay()]}）</span>
+      <span class="kc ${has?'':'none'}">${has?r0(s.k):'—'}</span>
+      <span class="bar"><i class="${over?'over':''}" style="width:${has?pct:0}%"></i></span>
+      ${k===todayIso?'<span class="today">今日</span>':''}
+    </button>`;
+  }).join('') + `</div>`;
+
+  const logged = days.map(d=>sums(meals[iso(d)])).filter((s,i)=>(meals[iso(days[i])]||[]).length);
+  if (logged.length){
+    const avg = logged.reduce((a,s)=>a+s.k,0)/logged.length;
+    const diff = avg - T.kcal;
+    h += `<div class="weeksum"><span>記録した日 <b>${logged.length}</b>/7日</span><span>1日平均 <b>${r0(avg)}</b> kcal</span><span>目標との差 <b>${diff>=0?'+':'−'}${r0(Math.abs(diff))}</b> kcal/日</span></div>`;
+  } else {
+    h += `<div class="weeksum"><span>この週はまだ記録がありません</span></div>`;
+  }
+
+  // その日
+  const list = meals[day] || [];
+  const s = sums(list), dd = parse(day);
+  const rest = T.kcal - s.k;
+  const verdict = !list.length ? ['none','まだ記録がありません']
+    : rest >= 0 ? ['good',`あと ${r0(rest)} kcal 食べられます`]
+    : s.k > T.kcal*1.1 ? ['warn',`目標を ${r0(-rest)} kcal オーバーしています`]
+    : ['good',`目標とほぼ同じです（+${r0(-rest)} kcal）`];
+  const bar = (v,t,col) => `<span class="m"><i style="width:${Math.min(100,v/t*100)}%;background:${col}"></i></span>`;
+
+  h += `<div class="layout"><div>
+    <div class="dayhead"><h2>${dd.getMonth()+1}月${dd.getDate()}日（${DOW[dd.getDay()]}）</h2></div>
+    <div class="panel total">
+      <div class="big">${r0(s.k)}<small>/ ${r0(T.kcal)} kcal</small></div>
+      <div class="meter"><i class="${s.k>T.kcal*1.1?'over':''}" style="width:${Math.min(100,s.k/T.kcal*100)}%"></i></div>
+      <p class="verdict ${verdict[0]}">${verdict[1]}</p>
+      <div class="pfc">
+        <div class="row"><span>タンパク質</span>${bar(s.p,T.protein,'var(--accent)')}<span class="n">${Math.round(s.p)} / ${T.protein}g</span></div>
+        <div class="row"><span>脂質</span>${bar(s.f,T.fat,'var(--plate)')}<span class="n">${Math.round(s.f)} / ${T.fat}g</span></div>
+        <div class="row"><span>炭水化物</span>${bar(s.c,T.carb,'var(--good)')}<span class="n">${Math.round(s.c)} / ${T.carb}g</span></div>
+      </div>
+    </div>
+    <div class="meals">${MEALS.map((name,m)=>{
+      const items = list.filter(e=>e.m===m);
+      const mk = sums(items).k;
+      return `<section class="meal"><h3>${name}<span>${items.length?r0(mk)+' kcal':''}</span></h3>
+        ${items.length ? `<ul>${items.map(e=>`<li><span>${esc(e.n)}${e.q!==1?`<span class="q">×${e.q}</span>`:''}</span><span class="k">${r0(e.k*e.q)}</span><button class="del" data-del="${e.id}" aria-label="${esc(e.n)}を削除">×</button></li>`).join('')}</ul>` : `<p class="empty">まだ何も記録していません</p>`}
+      </section>`;
+    }).join('')}</div>
+  </div>
+
+  <form class="panel addp" id="add" autocomplete="off">
+    <h2>食べたものを追加</h2>
+    <div class="seg" role="radiogroup" aria-label="食事">${MEALS.map((n,m)=>`<label><input type="radio" name="meal" value="${m}" ${m===mealSel?'checked':''}><span>${n}</span></label>`).join('')}</div>
+    <div class="f"><label class="lbl" for="food">食品・料理（入力すると候補が出ます）</label><input type="text" id="food" list="foodlist" placeholder="例：ご飯、から揚げ、牛丼"></div>
+    <div class="f qtyrow">
+      <div><label class="lbl" for="qty">量（1人前 = 1）</label><input type="number" id="qty" value="1" min="0.25" step="0.25" inputmode="decimal"></div>
+      <span class="preview" id="preview"></span>
+    </div>
+    <div class="custom" id="custom" hidden>
+      <p>リストにない食品です。パッケージなどを見て1人前の値を入力してください。</p>
+      <div class="full"><label class="lbl" for="ck">カロリー（1人前）</label><input type="number" id="ck" inputmode="decimal" placeholder="kcal"></div>
+      <div><label class="lbl" for="cp">タンパク質 g</label><input type="number" id="cp" inputmode="decimal" placeholder="任意"></div>
+      <div><label class="lbl" for="cf">脂質 g</label><input type="number" id="cf" inputmode="decimal" placeholder="任意"></div>
+      <div class="full"><label class="lbl" for="cc">炭水化物 g</label><input type="number" id="cc" inputmode="decimal" placeholder="任意"></div>
+    </div>
+    <button class="btn" type="submit">追加する</button>
+    <div class="msg" id="msg" hidden></div>
+    ${recent.length?`<div class="f"><span class="lbl">最近食べたもの（押すと1人前を追加）</span><div class="chips">${recent.map(l=>`<button type="button" class="chip" data-quick="${esc(l)}">${esc(l)}</button>`).join('')}</div></div>`:''}
+  </form></div>`;
+
+  $('#app').innerHTML = h;
+}
+
+/* ---------- 操作 ---------- */
+let mealSel = (h => h<10?0 : h<15?1 : h<17?3 : 2)(new Date().getHours());
+
+function addEntry(lbl, q, f){
+  (meals[day] = meals[day] || []).push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), m:mealSel, n:lbl, q, k:f[2], p:f[3], f:f[4], c:f[5]});
+  store('gym-meals', meals);
+  recent = [lbl, ...recent.filter(l=>l!==lbl)].slice(0,8);
+  store('gym-recent', recent);
+}
+function updatePreview(){
+  const f = byLabel[$('#food').value.trim()], q = +$('#qty').value || 0;
+  const typed = $('#food').value.trim() !== '';
+  $('#custom').hidden = !typed || !!f;
+  $('#preview').textContent = f && q ? `= ${r0(f[2]*q)} kcal` : '';
+}
+
+document.addEventListener('input', e=>{
+  if (e.target.id==='food' || e.target.id==='qty') updatePreview();
+});
+document.addEventListener('change', e=>{
+  if (e.target.name==='meal') mealSel = +e.target.value;
+  else if (e.target.id==='weeksel'){ week = +e.target.value; day = iso(weekStart(week)); render(); }
+  else if (e.target.id==='start' && e.target.value){
+    start = e.target.value; store('gym-start', start); pickWeek(); render();
+  }
+});
+document.addEventListener('click', e=>{
+  const t = e.target.closest('[data-w],[data-day],[data-del],[data-quick]');
+  if (!t) return;
+  if (t.dataset.w){ week = Math.max(0, Math.min(weeksTotal()-1, week + +t.dataset.w)); day = iso(weekStart(week)); }
+  else if (t.dataset.day) day = t.dataset.day;
+  else if (t.dataset.del){ meals[day] = (meals[day]||[]).filter(x=>x.id!==t.dataset.del); if (!meals[day].length) delete meals[day]; store('gym-meals', meals); }
+  else if (t.dataset.quick){ const f = byLabel[t.dataset.quick]; if (!f) return; addEntry(t.dataset.quick, 1, f); }
+  render();
+});
+document.addEventListener('submit', e=>{
+  if (e.target.id!=='add') return;
+  e.preventDefault();
+  const name = $('#food').value.trim(), q = +$('#qty').value;
+  const err = m => { $('#msg').hidden = false; $('#msg').textContent = m; };
+  if (!name) return err('食品・料理の名前を入力してください。');
+  if (!(q > 0 && q <= 20)) return err('量は0より大きい数を入力してください。');
+  let f = byLabel[name];
+  if (!f){
+    const k = +$('#ck').value;
+    if (!(k > 0 && k < 5000)) return err('リストにない食品は、カロリーを入力してください。');
+    f = [name, '', k, +$('#cp').value||0, +$('#cf').value||0, +$('#cc').value||0];
+    myFoods = [f, ...myFoods.filter(x=>x[0]!==name)].slice(0,100);
+    store('gym-myfoods', myFoods); indexFoods();
+  }
+  addEntry(name, q, f);
+  render();
+  $('#food').focus();
+});
+
+function pickWeek(){
+  const diff = Math.floor((parse(todayIso) - parse(start)) / 864e5);
+  week = Math.max(0, Math.min(weeksTotal()-1, Math.floor(diff/7)));
+  const ws = weekStart(week);
+  day = (diff >= week*7 && diff < week*7+7) ? todayIso : iso(ws);
+}
+
+(function init(){
+  if (!plan || !plan.kcal){
+    $('#app').innerHTML = `<p class="banner">まだプランが作成されていません。<a href="index.html">プランのページ</a>で情報を入力して「プランを作成」を押すと、1日の目標カロリーに合わせて食事を記録できるようになります。</p>`;
+    return;
+  }
+  if (!start){ start = todayIso; store('gym-start', start); }
+  indexFoods();
+  pickWeek();
+  render();
+})();
+</script>

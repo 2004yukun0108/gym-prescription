@@ -68,6 +68,9 @@ input:focus-visible,select:focus-visible,button:focus-visible,.seg input:focus-v
 .hint{font-size:11.5px;color:var(--muted);line-height:1.5}
 .btn{margin-top:18px;width:100%;padding:13px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:700 15px var(--body);cursor:pointer;letter-spacing:.05em}
 .btn:hover{filter:brightness(1.08)}
+.linkbtn{align-self:flex-start;display:inline-flex;gap:8px;align-items:center;padding:11px 18px;border-radius:8px;background:var(--ink);color:var(--ground);font:700 14px var(--body);text-decoration:none;letter-spacing:.03em}
+.linkbtn:hover{filter:brightness(1.15)}
+.linkbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .msg{margin-top:12px;font-size:13px;padding:10px 12px;border-radius:8px;background:var(--bad-soft);color:var(--bad)}
 
 /* output */
@@ -185,7 +188,7 @@ td.r,th.r{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-
 <div class="wrap">
   <header class="top">
     <h1>ジム<span>処方箋</span></h1>
-    <p>トレーナーなしでも、どのマシンを・何kgで・何回やるかが分かる。</p>
+    <p>トレーナーなしでも、ジムでも家でも、何を・どれだけ・何回やるかが分かる。</p>
   </header>
 
   <div class="layout">
@@ -212,7 +215,15 @@ td.r,th.r{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-
           </select>
         </div>
         <div class="field full">
-          <span class="lbl">ジムに行ける日数（週）</span>
+          <span class="lbl">トレーニングする場所</span>
+          <div class="seg">
+            <label><input type="radio" name="place" id="place-gym" value="gym" checked><span>ジムで筋トレ</span></label>
+            <label><input type="radio" name="place" id="place-home" value="home"><span>家で筋トレ</span></label>
+          </div>
+          <p class="hint">家の場合は自重と、リュック・水入りペットボトルだけでできるメニューになります。</p>
+        </div>
+        <div class="field full">
+          <span class="lbl">トレーニングできる日数（週）</span>
           <div class="seg">
             <label><input type="radio" name="days" id="days-2" value="2"><span>2日</span></label>
             <label><input type="radio" name="days" id="days-3" value="3" checked><span>3日</span></label>
@@ -284,15 +295,53 @@ const EX = {
     cues:['肘は肩の真下につく','頭からかかとまで一直線','お尻が上がる・下がるようなら休む']},
 };
 
+// 家トレ用。exp は「半年以上続けている」人向けの上書き
+const HEX = {
+  squat:    {name:'スクワット', muscle:'太もも・お尻', bw:'自重', big:true, reps:'12–15',
+    cues:['足は肩幅、つま先はやや外向き','椅子に座るようにお尻を後ろへ引く','膝とつま先の向きをそろえ、太ももが床と平行まで下ろす'],
+    exp:{name:'スクワット（3秒で下ろす）', reps:'15–20'}},
+  lunge:    {name:'リバースランジ', muscle:'太もも・お尻', bw:'自重', big:true, reps:'左右各10',
+    cues:['片脚を大きく後ろへ引き、両膝を90度に曲げる','前脚のかかとで床を押して戻る','上体はまっすぐ立てたまま'],
+    exp:{name:'ブルガリアンスクワット', reps:'左右各10–12', cues:['後ろ足の甲を椅子やソファにのせる','前脚に体重をのせてまっすぐ沈む','前の膝が内側に入らないように']}},
+  bridge:   {name:'ヒップリフト', muscle:'お尻・太もも裏', bw:'自重', reps:'15',
+    cues:['仰向けで膝を立て、かかとをお尻に近づける','お尻を締めて肩から膝が一直線になるまで上げる','上で1秒止め、ゆっくり下ろす'],
+    exp:{name:'片脚ヒップリフト', reps:'左右各12'}},
+  pushup:   {name:'膝つき腕立て伏せ', muscle:'胸・二の腕', bw:'自重', big:true, reps:'8–12',
+    cues:['手は肩幅より少し広く、胸の横につく','頭から膝まで一直線をキープ','胸が床に近づくまで下ろす'],
+    exp:{name:'腕立て伏せ', reps:'10–15', cues:['手は肩幅より少し広く、胸の横につく','頭からかかとまで一直線（腰を落とさない）','胸が床に近づくまで下ろす']}},
+  widepush: {name:'ワイド膝つき腕立て', muscle:'胸', bw:'自重', reps:'8–12',
+    cues:['手幅を肩幅の1.5倍くらいに広げる','肘を外に開きながら胸を床へ近づける','胸の筋肉で押し返す意識で'],
+    exp:{name:'ワイド腕立て伏せ', reps:'10–15'}},
+  row:      {name:'リュックロー', muscle:'背中', bw:'リュック', big:true, reps:'12–15',
+    cues:['リュックに2Lペットボトルを1〜2本入れる','膝を軽く曲げ、背すじを伸ばしたまま上体を前に倒す','肘を後ろへ引き、肩甲骨を寄せる'],
+    exp:{reps:'15–20'}},
+  shoulder: {name:'ペットボトル・ショルダープレス', muscle:'肩', bw:'ボトル', reps:'12–15',
+    cues:['水を入れた500mL〜2Lのボトルを両手に持つ','肩の高さから真上に押し上げる','腰を反らさず、お腹に力を入れる'],
+    exp:{name:'パイクプッシュアップ', bw:'自重', reps:'8–12', cues:['お尻を高く上げて体を「へ」の字にする','頭を両手の間の床へ近づけるように肘を曲げる','首に負担がかかるなら膝を曲げてOK']}},
+  dips:     {name:'椅子ディップス', muscle:'二の腕の裏', bw:'自重', reps:'8–12',
+    cues:['動かない椅子の座面の端に手をつく','膝を曲げて足を手前に置くと軽くなる','肘を後ろに曲げ、90度まで下ろす'],
+    exp:{reps:'12–15', cues:['動かない椅子の座面の端に手をつく','脚を伸ばして前に置くと負荷が上がる','肘を後ろに曲げ、90度まで下ろす']}},
+  curl:     {name:'ペットボトルカール', muscle:'力こぶ', bw:'ボトル', reps:'12–15',
+    cues:['水を入れたボトルを両手に持つ','肘を脇腹に固定して巻き上げる','下ろすときに2秒かける']},
+  sidelegs: {name:'サイドレッグレイズ', muscle:'お尻の横', bw:'自重', reps:'左右各15–20',
+    cues:['横向きに寝て、体を一直線にする','上の脚をつま先を正面に向けたまま持ち上げる','反動を使わず、ゆっくり下ろす']},
+  superman: {name:'バックエクステンション（床）', muscle:'腰・お尻', bw:'自重', reps:'10–15',
+    cues:['うつ伏せで腕を前に伸ばす','胸と脚を少しだけ床から浮かせ、2秒止める','腰を反らしすぎない']},
+  crunch:   {name:'クランチ', muscle:'腹筋', bw:'自重', reps:'15–20',
+    cues:['仰向けで膝を立て、手は胸の前で組む','息を吐きながら、おへそを覗き込むように丸める','首ではなくお腹の力で起こす']},
+  plank:    EX.plank,
+};
+
+// list: ジム用 / home: 家用
 const SESS = {
-  A:{name:'全身A', list:['legpress','chestpress','latpull','legcurl','abcrunch']},
-  B:{name:'全身B', list:['legext','seatedrow','shoulder','abduction','backext','plank']},
-  C:{name:'全身C', list:['legpress','pecfly','latpull','legcurl','plank']},
-  U1:{name:'上半身①', list:['chestpress','latpull','shoulder','seatedrow','pushdown']},
-  L1:{name:'下半身①', list:['legpress','legcurl','legext','abduction','abcrunch']},
-  U2:{name:'上半身②', list:['pecfly','seatedrow','latpull','shoulder','armcurl']},
-  L2:{name:'下半身②', list:['legpress','legcurl','abduction','backext','plank']},
-  X:{name:'有酸素＋体幹', list:['backext','abcrunch','plank'], cardioOnly:true},
+  A:{name:'全身A', list:['legpress','chestpress','latpull','legcurl','abcrunch'], home:['squat','pushup','row','bridge','crunch']},
+  B:{name:'全身B', list:['legext','seatedrow','shoulder','abduction','backext','plank'], home:['lunge','row','shoulder','sidelegs','superman','plank']},
+  C:{name:'全身C', list:['legpress','pecfly','latpull','legcurl','plank'], home:['squat','widepush','row','bridge','plank']},
+  U1:{name:'上半身①', list:['chestpress','latpull','shoulder','seatedrow','pushdown'], home:['pushup','row','shoulder','superman','dips']},
+  L1:{name:'下半身①', list:['legpress','legcurl','legext','abduction','abcrunch'], home:['squat','bridge','lunge','sidelegs','crunch']},
+  U2:{name:'上半身②', list:['pecfly','seatedrow','latpull','shoulder','armcurl'], home:['widepush','row','shoulder','dips','curl']},
+  L2:{name:'下半身②', list:['legpress','legcurl','abduction','backext','plank'], home:['squat','bridge','sidelegs','superman','plank']},
+  X:{name:'有酸素＋体幹', list:['backext','abcrunch','plank'], home:['superman','crunch','plank'], cardioOnly:true},
 };
 const SPLIT = {
   2:{days:[1,4], s:['A','B']},
@@ -307,7 +356,8 @@ function build(i){
   const bmi = i.weight/(h*h), tbmi = i.target/(h*h);
   const bmr = 10*i.weight + 6.25*i.height - 5*i.age + (i.sex==='m'?5:-161);
   const refW = Math.min(i.weight, 25*h*h);               // 高BMIでもタンパク質・重量が過大にならないよう
-  const trainPerDay = i.weight*4*i.days/7;               // 1回のジム ≈ 体重×4kcal
+  const home = i.place==='home';
+  const trainPerDay = i.weight*(home?3.5:4)*i.days/7;    // 1回のトレーニング ≈ 体重×4kcal（家は少なめ）
   const tdee = bmr*i.activity + trainPerDay;
   const diff = i.target - i.weight;
   const goal = Math.abs(diff) < 1 ? 'keep' : diff < 0 ? 'lose' : 'gain';
@@ -346,8 +396,8 @@ function build(i){
   const split = SPLIT[i.days];
   const sessions = split.s.map((k,idx)=>{
     const s = SESS[k];
-    const ex = s.list.map(id=>{
-      const e = EX[id];
+    const ex = (home?s.home:s.list).map(id=>{
+      const e = home ? (beg ? HEX[id] : {...HEX[id], ...HEX[id].exp}) : EX[id];
       let load = null;
       if (e.coef){
         const raw = refW*e.coef[sx]*(beg?0.75:1)*ageF;
@@ -355,7 +405,7 @@ function build(i){
       }
       const sets = beg ? 3 : (goal==='gain' && e.big ? 4 : 3);
       const reps = e.time ? (beg?'30秒':'45–60秒') : e.reps ? e.reps : beg ? '12–15' : goal==='gain' && e.big ? '8–10' : '10–12';
-      const rest = e.big ? (beg?'90秒':'2分') : '60秒';
+      const rest = e.big ? (beg||home?'90秒':'2分') : '60秒';
       return {...e, id, load, sets, reps, rest};
     });
     return {key:k, name:s.name, dow:split.days[idx], ex, cardioOnly:!!s.cardioOnly};
@@ -367,7 +417,7 @@ function build(i){
   const cardioDay = {speed: i.age>=60?4.5:5.0, incline: beg?8:12, min: beg?'30':'40'};
 
   return {i, bmi, tbmi, bmr, tdee, trainPerDay, goal, diff, weekly, weeks, kcal, protein, fat, carb, notes, sessions,
-    beg, hr:[Math.round(hrMax*0.6), Math.round(hrMax*0.7)], cardio, cardioDay, blocked: tbmi < 17.5 && goal==='lose'};
+    beg, home, hr:[Math.round(hrMax*0.6), Math.round(hrMax*0.7)], cardio, cardioDay, blocked: tbmi < 17.5 && goal==='lose'};
 }
 function mile(w, diff, weekly, wk){
   const d = Math.min(Math.abs(diff), weekly*wk);
@@ -403,8 +453,9 @@ function render(){
       <div class="stat"><div class="k">期間</div><div class="v">${p.goal==='keep'?'—':p.weeks}<small>${p.goal==='keep'?'':'週'}</small></div><div class="s">${p.goal==='keep'?'体重を保ちながら引き締め':dateAfter(p.weeks)+'ごろ達成'}</div></div>
       <div class="stat"><div class="k">1日の摂取目安</div><div class="v">${fmt(p.kcal)}<small>kcal</small></div><div class="s">消費 約${fmt(p.tdee)}kcal</div></div>
       <div class="stat"><div class="k">1週間のペース</div><div class="v">${p.goal==='keep'?'±0':sign+f1(p.weekly)}<small>kg</small></div><div class="s">${goalWord}</div></div>
-      <div class="stat"><div class="k">ジム</div><div class="v">週${p.i.days}<small>回</small></div><div class="s">1回 約${sessionMin(p.sessions[0])}分</div></div>
+      <div class="stat"><div class="k">${p.home?'家トレ':'ジム'}</div><div class="v">週${p.i.days}<small>回</small></div><div class="s">1回 約${sessionMin(p.sessions[0])}分</div></div>
     </div>
+    <a class="linkbtn" href="meals.html">食事を記録してカロリーを計算する <span aria-hidden="true">→</span></a>
   </section>`;
   h += chart(p);
   h += `<div class="tabs" role="tablist">
@@ -466,9 +517,11 @@ function train(p){
   h += `</div>`;
   const s = p.sessions[dayIdx];
   h += `<div class="session-head"><h3>${DOW[s.dow]}曜日 ${s.name}</h3><span class="meta">所要 約${sessionMin(s)}分</span></div>`;
-  h += `<div class="flow"><span>① ウォームアップ：エアロバイク <b>5</b>分</span>${s.cardioOnly?'<span>② 有酸素</span><span>③ 体幹</span>':'<span>② 筋トレ（上から順に）</span><span>③ 有酸素</span>'}<span>④ ストレッチ <b>5</b>分</span></div>`;
+  h += `<div class="flow"><span>① ウォームアップ：${p.home?'その場足踏み':'エアロバイク'} <b>5</b>分</span>${s.cardioOnly?'<span>② 有酸素</span><span>③ 体幹</span>':'<span>② 筋トレ（上から順に）</span><span>③ 有酸素</span>'}<span>④ ストレッチ <b>5</b>分</span></div>`;
   if (p.beg && !s.cardioOnly) h += `<p class="alert info">最初の2週間は各種目 <b>2セット</b> でOK。フォームを覚えることを優先し、3週目から3セットにしましょう。</p>`;
-  const cardioBlock = c => `<div class="cardio"><h4>トレッドミル（傾斜ウォーキング）</h4>
+  const cardioBlock = c => p.home ? `<div class="cardio"><h4>早歩きウォーキング</h4>
+    <p class="rx"><b>${c.min}</b>分（少し息が弾む速さ）</p>
+    <p class="small">心拍数 ${P.hr[0]}〜${P.hr[1]}拍/分（会話ができるくらいのきつさ）を目安に。坂道や階段を入れると効果アップ。雨の日は家で踏み台昇降（高さ15〜20cmの段差）を同じ時間。</p></div>` : `<div class="cardio"><h4>トレッドミル（傾斜ウォーキング）</h4>
     <p class="rx">時速 <b>${c.speed.toFixed(1)}</b>km ／ 傾斜 <b>${c.incline}</b>% ／ <b>${c.min}</b>分</p>
     <p class="small">心拍数 ${P.hr[0]}〜${P.hr[1]}拍/分（会話ができるくらいのきつさ）を目安に。手すりにつかまらずに歩ける傾斜まで下げてOK。トレッドミルが空いていなければクロストレーナーでも同じ時間。</p></div>`;
   if (s.cardioOnly) h += cardioBlock(p.cardioDay);
@@ -486,7 +539,9 @@ function train(p){
     </li>`;
   }).join('') + `</ol>`;
   if (!s.cardioOnly) h += cardioBlock(p.cardio);
-  h += `<p class="small">重さは「あと2〜3回できそう」で終わる重さが正解です。表示の重さで軽すぎ・重すぎなら、その日のうちに調整してメモしておきましょう。</p>`;
+  h += p.home
+    ? `<p class="small">「あと2〜3回できそう」で終わるきつさが正解です。楽すぎるならゆっくり動く・ボトルを重くする、きつすぎるなら膝をつく・可動域を浅くするなどで調整しましょう。</p>`
+    : `<p class="small">重さは「あと2〜3回できそう」で終わる重さが正解です。表示の重さで軽すぎ・重すぎなら、その日のうちに調整してメモしておきましょう。</p>`;
   return h;
 }
 
@@ -501,7 +556,7 @@ function food(p){
         <div><span><i class="sw" style="background:var(--plate)"></i>脂質</span><span class="num">${p.fat} g</span></div>
         <div><span><i class="sw" style="background:var(--good)"></i>炭水化物</span><span class="num">${p.carb} g</span></div>
       </div>
-      <p class="small" style="margin-top:10px">基礎代謝 ${fmt(p.bmr)}kcal ×活動量 ＋ ジム分 約${fmt(p.trainPerDay)}kcal/日 ＝ 消費 約${fmt(p.tdee)}kcal。${p.goal==='lose'?'ここから差し引いた分が脂肪の減少になります。':p.goal==='gain'?'少し多めに食べて筋肉をつけます。':''}</p>
+      <p class="small" style="margin-top:10px">基礎代謝 ${fmt(p.bmr)}kcal ×活動量 ＋ トレーニング分 約${fmt(p.trainPerDay)}kcal/日 ＝ 消費 約${fmt(p.tdee)}kcal。${p.goal==='lose'?'ここから差し引いた分が脂肪の減少になります。':p.goal==='gain'?'少し多めに食べて筋肉をつけます。':''}</p>
     </div>
     <div class="card"><h3>タンパク質は1食 約<span class="num">${per}</span>g</h3>
       <table><thead><tr><th>食品</th><th class="r">量</th><th class="r">タンパク質</th></tr></thead><tbody>
@@ -516,18 +571,19 @@ function food(p){
     <div class="card"><h3>続けるためのコツ</h3><ul class="tips">
       <li>毎食「手のひら1枚分」の肉・魚・卵・大豆製品を入れる</li>
       <li>ご飯はなくさない。${p.goal==='lose'?'1食 茶碗に軽く1杯（150g）が目安':'1食 茶碗1杯（200g）以上'}</li>
-      <li>ジムの日はトレーニング後1〜2時間以内に食事をとる</li>
+      <li>トレーニングの日は終わってから1〜2時間以内に食事をとる</li>
       <li>ジュース・お酒はカロリーが多いので、まず飲み物から見直す</li>
       <li>${p.goal==='lose'?'1日 8,000歩以上歩くと、食事を減らしすぎずに済む':'食が細い人は1日4〜5回に分けて食べる'}</li>
     </ul></div>
-  </div>`;
+  </div>
+  <a class="linkbtn" href="meals.html">食べたものを記録する <span aria-hidden="true">→</span></a>`;
 }
 
 function guide(p){
   const steps = [
-    ['1〜2週目','フォームを覚える', p.beg?'各種目2セット、表示より軽めでもOK。マシンのシート位置をスマホにメモしておくと次回が楽です。':'表示の重さで全セットこなせるか確認し、重さを決めます。'],
-    ['3〜4週目','決まったメニューをこなす','全種目を規定セット数で。ジムに行く曜日を固定して、習慣にします。'],
-    ['5週目〜','少しずつ重くする','全セットで回数の上限（例：15回）ができたら、次回から重さを1段階（2.5〜5kg）上げ、回数は下限からやり直します。'],
+    ['1〜2週目','フォームを覚える', p.home?(p.beg?'各種目2セット、回数が届かなくてもOK。スマホで横から撮影してフォームを確認すると上達が早いです。':'表示の回数で全セットこなせるか確認します。'):p.beg?'各種目2セット、表示より軽めでもOK。マシンのシート位置をスマホにメモしておくと次回が楽です。':'表示の重さで全セットこなせるか確認し、重さを決めます。'],
+    ['3〜4週目','決まったメニューをこなす',`全種目を規定セット数で。${p.home?'トレーニングする曜日と時間':'ジムに行く曜日'}を固定して、習慣にします。`],
+    ['5週目〜','少しずつきつくする', p.home?'全セットで回数の上限ができたら、下ろす動作を3秒にする・ボトルを重くする・1段きつい種目（膝つき→通常の腕立てなど）に進みます。':'全セットで回数の上限（例：15回）ができたら、次回から重さを1段階（2.5〜5kg）上げ、回数は下限からやり直します。'],
     ['4週ごと','体重をチェック', p.goal==='lose'?`2週続けて体重が減らなければ、摂取カロリーを100kcal減らすか、1日の歩数を2,000歩増やします。`:p.goal==='gain'?'2週続けて体重が増えなければ、摂取カロリーを150kcal増やします。':'体重を保ちつつ、ウエストや見た目の変化で判断します。'],
     ['8〜12週ごと','軽めの1週間を入れる','疲れが抜けないときは重さを7割に落とす週を入れると、ケガを防げて次の週から伸びやすくなります。'],
   ];
@@ -544,11 +600,11 @@ function load(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ re
 function readForm(){
   const r = n => document.querySelector(`input[name=${n}]:checked`).value;
   return {sex:r('sex'), height:+$('#height').value, weight:+$('#weight').value, age:+$('#age').value,
-    target:+$('#target').value, activity:+$('#activity').value, days:+r('days'), level:r('level'), pace:+r('pace')};
+    target:+$('#target').value, activity:+$('#activity').value, place:r('place'), days:+r('days'), level:r('level'), pace:+r('pace')};
 }
 function writeForm(v){
   ['height','weight','age','target','activity'].forEach(k=>$('#'+k).value=v[k]);
-  [['sex',v.sex],['days',v.days],['level',v.level],['pace',v.pace]].forEach(([n,val])=>{
+  [['sex',v.sex],['place',v.place],['days',v.days],['level',v.level],['pace',v.pace]].forEach(([n,val])=>{
     const el = document.querySelector(`input[name=${n}][value="${val}"]`); if (el) el.checked = true;
   });
 }
@@ -560,6 +616,11 @@ function validate(v){
   if (!(v.target>=30 && v.target<=250)) return 'なりたい体重は30〜250kgの範囲で入力してください。';
   if (!(v.age>=13 && v.age<=90)) return '年齢は13〜90歳の範囲で入力してください。';
   return null;
+}
+// 食事記録ページ（meals.html）が読む目標値
+function savePlan(){
+  store('gym-plan', {kcal:P.kcal, protein:P.protein, fat:P.fat, carb:P.carb, weeks:P.weeks, goal:P.goal});
+  if (!load('gym-start')) store('gym-start', (d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)(new Date()));
 }
 function pickToday(){
   const today = (new Date().getDay()+6)%7;
@@ -574,7 +635,7 @@ $('#form').addEventListener('submit', e=>{
   if (err) return;
 
   store('gym-input', v);
-  P = build(v); pickToday(); render();
+  P = build(v); savePlan(); pickToday(); render();
   if (window.innerWidth < 880) $('#out').scrollIntoView({behavior:'smooth', block:'start'});
 });
 $('#out').addEventListener('click', e=>{
@@ -594,7 +655,7 @@ $('#out').addEventListener('change', e=>{
   const saved = load('gym-input');
   tab = load('gym-tab') || 'train';
   done = load(doneKey()) || {};
-  if (saved && !validate(saved)){ writeForm(saved); P = build(readForm()); pickToday(); render(); }
+  if (saved && !validate(saved)){ writeForm(saved); P = build(readForm()); savePlan(); pickToday(); render(); }
   else $('#out').innerHTML = `<p class="banner">左のフォームに身長・年齢・体重・なりたい体重を入力して「プランを作成」を押すと、ここにあなた専用のダイエット計画が表示されます。</p>`;
 })();
 </script>
