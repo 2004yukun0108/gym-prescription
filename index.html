@@ -199,10 +199,10 @@ td.r,th.r{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-
             <label><input type="radio" name="sex" id="sex-f" value="f"><span>女性</span></label>
           </div>
         </div>
-        <div class="field"><label for="height">身長</label><div class="unit"><input id="height" type="number" inputmode="decimal" step="0.1" value="170"><span>cm</span></div></div>
-        <div class="field"><label for="age">年齢</label><div class="unit"><input id="age" type="number" inputmode="numeric" value="30"><span>歳</span></div></div>
-        <div class="field"><label for="weight">今の体重</label><div class="unit"><input id="weight" type="number" inputmode="decimal" step="0.1" value="75"><span>kg</span></div></div>
-        <div class="field"><label for="target">なりたい体重</label><div class="unit"><input id="target" type="number" inputmode="decimal" step="0.1" value="68"><span>kg</span></div></div>
+        <div class="field"><label for="height">身長</label><div class="unit"><input id="height" type="number" inputmode="decimal" step="0.1"><span>cm</span></div></div>
+        <div class="field"><label for="age">年齢</label><div class="unit"><input id="age" type="number" inputmode="numeric"><span>歳</span></div></div>
+        <div class="field"><label for="weight">今の体重</label><div class="unit"><input id="weight" type="number" inputmode="decimal" step="0.1"><span>kg</span></div></div>
+        <div class="field"><label for="target">なりたい体重</label><div class="unit"><input id="target" type="number" inputmode="decimal" step="0.1"><span>kg</span></div></div>
         <div class="field full">
           <label for="activity">ふだんの活動量（ジム以外）</label>
           <select id="activity">
@@ -381,14 +381,13 @@ const f1 = v => (Math.round(v*10)/10).toFixed(1);
 const fmt = v => Math.round(v).toLocaleString('ja-JP');
 
 /* ---------- 描画 ---------- */
-let P = null, tab = 'train', dayIdx = 0, isExample = true;
+let P = null, tab = 'train', dayIdx = 0;
 
 function render(){
   const p = P, out = $('#out');
   const sign = p.diff < 0 ? '−' : '+';
   const goalWord = {lose:'減量', gain:'増量', keep:'キープ＆引き締め'}[p.goal];
   let h = '';
-  if (isExample) h += `<p class="banner">例として「170cm・75kg・30歳の男性が68kgを目指す」プランを表示しています。左のフォームにあなたの数値を入れて「プランを作成」を押してください。</p>`;
   h += p.notes.map(([c,t])=>`<p class="alert ${c}">${t}</p>`).join('');
 
   if (p.blocked){
@@ -554,6 +553,8 @@ function writeForm(v){
   });
 }
 function validate(v){
+  const empty = [['height','身長'],['age','年齢'],['weight','今の体重'],['target','なりたい体重']].filter(([k])=>!v[k]).map(([,l])=>l);
+  if (empty.length) return `${empty.join('・')}を入力してください。`;
   if (!(v.height>=120 && v.height<=220)) return '身長は120〜220cmの範囲で入力してください。';
   if (!(v.weight>=30 && v.weight<=250)) return '今の体重は30〜250kgの範囲で入力してください。';
   if (!(v.target>=30 && v.target<=250)) return 'なりたい体重は30〜250kgの範囲で入力してください。';
@@ -571,7 +572,7 @@ $('#form').addEventListener('submit', e=>{
   const v = readForm(), err = validate(v);
   $('#msg').hidden = !err; $('#msg').textContent = err || '';
   if (err) return;
-  isExample = false;
+
   store('gym-input', v);
   P = build(v); pickToday(); render();
   if (window.innerWidth < 880) $('#out').scrollIntoView({behavior:'smooth', block:'start'});
@@ -591,9 +592,9 @@ $('#out').addEventListener('change', e=>{
 
 (function init(){
   const saved = load('gym-input');
-  if (saved && !validate(saved)){ writeForm(saved); isExample = false; }
   tab = load('gym-tab') || 'train';
   done = load(doneKey()) || {};
-  P = build(readForm()); pickToday(); render();
+  if (saved && !validate(saved)){ writeForm(saved); P = build(readForm()); pickToday(); render(); }
+  else $('#out').innerHTML = `<p class="banner">左のフォームに身長・年齢・体重・なりたい体重を入力して「プランを作成」を押すと、ここにあなた専用のダイエット計画が表示されます。</p>`;
 })();
 </script>
