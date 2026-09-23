@@ -1,0 +1,599 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ジム処方箋</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{
+  --ground:#EEF0EC; --surface:#FFFFFF; --sunk:#E4E7E1; --ink:#15201B; --muted:#5B6760; --line:#D3D8D1;
+  --accent:#1D55C4; --accent-soft:#DCE6FA; --accent-ink:#FFFFFF;
+  --plate:#E5B017; --plate-ink:#2A2000;
+  --good:#23845A; --good-soft:#DDF1E6; --warn:#B7560E; --warn-soft:#FBEBDD; --bad:#C23A2E; --bad-soft:#F9E1DE;
+  --display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0F1412; --surface:#182019; --sunk:#111815; --ink:#E7ECE8; --muted:#98A49D; --line:#2A342F;
+    --accent:#7AA2FF; --accent-soft:#1C2A4A; --accent-ink:#0B1426;
+    --plate:#F0C33A; --plate-ink:#241B00;
+    --good:#5CC792; --good-soft:#15301F; --warn:#F0A060; --warn-soft:#3A2412; --bad:#F07F74; --bad-soft:#3A1A17;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0F1412; --surface:#182019; --sunk:#111815; --ink:#E7ECE8; --muted:#98A49D; --line:#2A342F;
+  --accent:#7AA2FF; --accent-soft:#1C2A4A; --accent-ink:#0B1426;
+  --plate:#F0C33A; --plate-ink:#241B00;
+  --good:#5CC792; --good-soft:#15301F; --warn:#F0A060; --warn-soft:#3A2412; --bad:#F07F74; --bad-soft:#3A1A17;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.7;padding-inline:16px;padding-block:0 48px}
+h1,h2,h3,h4{margin:0;text-wrap:balance;line-height:1.35}
+p{margin:0}
+.wrap{max-width:1180px;margin:0 auto}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* header */
+.top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding-block:22px 18px;border-bottom:2px solid var(--ink);margin-bottom:22px}
+.top h1{font-family:var(--display);font-weight:400;font-size:30px;letter-spacing:.02em}
+.top h1 span{color:var(--accent)}
+.top p{color:var(--muted);font-size:14px}
+
+.layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:880px){.layout{grid-template-columns:1fr}}
+
+/* form */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+@media (min-width:881px){.panel.form{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}}
+.form h2{font-size:15px;font-weight:700;margin-bottom:14px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field.full{grid-column:1/-1}
+.field>label,.field>.lbl{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.unit{position:relative}
+.unit input{width:100%;padding:9px 40px 9px 12px;font:600 17px var(--mono);color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:8px}
+.unit span{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted)}
+select{width:100%;padding:9px 10px;font:500 14px var(--body);color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:8px}
+input:focus-visible,select:focus-visible,button:focus-visible,.seg input:focus-visible+span,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:flex;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:3px;gap:3px}
+.seg label{flex:1;position:relative;cursor:pointer}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg span{display:block;text-align:center;padding:6px 4px;border-radius:6px;font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap}
+.seg input:checked+span{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgb(0 0 0/.12)}
+.hint{font-size:11.5px;color:var(--muted);line-height:1.5}
+.btn{margin-top:18px;width:100%;padding:13px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);font:700 15px var(--body);cursor:pointer;letter-spacing:.05em}
+.btn:hover{filter:brightness(1.08)}
+.msg{margin-top:12px;font-size:13px;padding:10px 12px;border-radius:8px;background:var(--bad-soft);color:var(--bad)}
+
+/* output */
+.out{display:flex;flex-direction:column;gap:22px;min-width:0}
+.banner{font-size:13px;padding:10px 14px;border-radius:8px;border:1px dashed var(--muted);color:var(--muted)}
+.alert{font-size:13.5px;padding:12px 14px;border-radius:8px;line-height:1.6}
+.alert.warn{background:var(--warn-soft);color:var(--warn)}
+.alert.bad{background:var(--bad-soft);color:var(--bad)}
+.alert.info{background:var(--accent-soft);color:var(--ink)}
+
+.hero{display:flex;flex-direction:column;gap:14px}
+.route{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.route .w{font-family:var(--display);font-size:44px;line-height:1}
+.route .w small{font-family:var(--body);font-size:15px;font-weight:700;margin-left:2px}
+.route .arrow{font-size:14px;color:var(--muted);display:flex;flex-direction:column;align-items:center;line-height:1.3}
+.route .arrow b{font-family:var(--mono);color:var(--accent);font-size:15px}
+.route .goal{color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stat{padding:12px 14px;border-left:1px solid var(--line)}
+.stat:first-child{border-left:0;padding-left:0}
+.stat .k{font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.05em}
+.stat .v{font:600 22px var(--mono);font-variant-numeric:tabular-nums}
+.stat .v small{font:500 12px var(--body);color:var(--muted);margin-left:3px}
+.stat .s{font-size:12px;color:var(--muted)}
+@media (max-width:620px){.stats{grid-template-columns:1fr 1fr}.stat:nth-child(3){border-left:0;padding-left:0}.stat:nth-child(n+3){border-top:1px solid var(--line)}}
+
+.chartbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 10px}
+.chartbox h3{font-size:14px;margin-bottom:4px}
+.chartbox svg{width:100%;height:auto;display:block}
+.chartbox .note{font-size:12px;color:var(--muted)}
+.miles{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.miles span{font-size:12px;padding:3px 10px;border-radius:99px;background:var(--sunk);color:var(--muted)}
+.miles b{font-family:var(--mono);color:var(--ink);font-weight:600}
+
+/* tabs */
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--ink)}
+.tab{padding:10px 16px;border:0;background:none;font:700 14px var(--body);color:var(--muted);cursor:pointer;border-radius:8px 8px 0 0}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--ground)}
+.pane{display:flex;flex-direction:column;gap:18px;padding-top:4px}
+
+/* week strip */
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.dayb{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;font:inherit;color:var(--ink);display:flex;flex-direction:column;gap:2px;align-items:center}
+.dayb .d{font-size:12px;color:var(--muted);font-weight:700}
+.dayb .n{font-size:12.5px;font-weight:700;line-height:1.3}
+.dayb.rest{background:transparent;border-style:dashed;cursor:default}
+.dayb.rest .n{color:var(--muted);font-weight:400}
+.dayb[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.dayb[aria-pressed="true"] .d{color:var(--accent-ink)}
+.dayb .today{font-size:10px;letter-spacing:.06em}
+
+.session-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.session-head h3{font-family:var(--display);font-weight:400;font-size:22px}
+.session-head .meta{font-size:13px;color:var(--muted)}
+.flow{display:flex;gap:6px;flex-wrap:wrap;font-size:12.5px}
+.flow span{padding:4px 10px;border-radius:6px;background:var(--sunk)}
+.flow span b{font-family:var(--mono);font-weight:600}
+
+.exlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.ex{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:4px 12px;align-items:start}
+.ex .no{font:600 13px var(--mono);color:var(--muted);padding-top:3px}
+.ex h4{font-size:16.5px;font-weight:700}
+.ex .muscle{font-size:12.5px;color:var(--muted)}
+.ex .rx{grid-column:2/4;display:flex;gap:6px 14px;flex-wrap:wrap;align-items:baseline;font-size:13.5px}
+.ex .rx .big{font:600 20px var(--mono)}
+.ex .rx .rest{color:var(--muted);font-size:12.5px}
+.plate{min-width:64px;height:64px;border-radius:50%;background:var(--plate);color:var(--plate-ink);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;box-shadow:inset 0 0 0 5px rgb(0 0 0/.08),inset 0 0 0 13px var(--plate),inset 0 0 0 14px rgb(0 0 0/.12)}
+.plate b{font:600 17px var(--mono)}
+.plate small{font-size:10px;font-weight:700}
+.plate.bw{background:var(--sunk);color:var(--muted);box-shadow:none;border:1px dashed var(--line)}
+.plate.bw b{font:700 11.5px var(--body)}
+.ex details,.ex .sets,.ex .alt{grid-column:2/4}
+.ex details{font-size:13px}
+.ex summary{cursor:pointer;color:var(--accent);font-weight:700;font-size:12.5px;width:max-content}
+.ex ul{margin:6px 0 0;padding-left:1.2em;color:var(--ink)}
+.ex .alt{font-size:12px;color:var(--muted)}
+.sets{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.setc{position:relative}
+.setc input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.setc span{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:99px;border:1px solid var(--line);font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+.setc input:checked+span{background:var(--good);border-color:var(--good);color:var(--surface);font-weight:700}
+.setc input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.cardio{background:var(--accent-soft);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.cardio h4{font-size:15px}
+.cardio .rx{font-size:14px}
+.cardio .rx b{font:600 17px var(--mono)}
+.small{font-size:12.5px;color:var(--muted)}
+
+/* food */
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card h3{font-size:15px;margin-bottom:10px}
+.pfc{display:flex;height:14px;border-radius:4px;overflow:hidden;margin:6px 0 12px}
+.pfc i{display:block}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+.legend div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--line);padding-bottom:4px}
+.legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+th{font-size:11.5px;color:var(--muted);letter-spacing:.04em}
+td.r,th.r{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.tips{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;font-size:13.5px}
+
+/* guide */
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.steps li{display:grid;grid-template-columns:104px minmax(0,1fr);gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.steps .when{font:600 13px var(--mono);color:var(--accent)}
+.steps h4{font-size:15px;margin-bottom:2px}
+.steps p{font-size:13.5px;color:var(--muted)}
+@media (max-width:520px){.steps li{grid-template-columns:1fr;gap:2px}}
+.foot{margin-top:28px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;max-width:70ch}
+@media (prefers-reduced-motion:no-preference){.pane{animation:fade .25s ease}@keyframes fade{from{opacity:.4}to{opacity:1}}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>ジム<span>処方箋</span></h1>
+    <p>トレーナーなしでも、どのマシンを・何kgで・何回やるかが分かる。</p>
+  </header>
+
+  <div class="layout">
+    <form class="panel form" id="form" novalidate>
+      <h2>あなたの情報</h2>
+      <div class="fields">
+        <div class="field full">
+          <span class="lbl">性別（基礎代謝の計算に使用）</span>
+          <div class="seg" role="radiogroup">
+            <label><input type="radio" name="sex" id="sex-m" value="m" checked><span>男性</span></label>
+            <label><input type="radio" name="sex" id="sex-f" value="f"><span>女性</span></label>
+          </div>
+        </div>
+        <div class="field"><label for="height">身長</label><div class="unit"><input id="height" type="number" inputmode="decimal" step="0.1" value="170"><span>cm</span></div></div>
+        <div class="field"><label for="age">年齢</label><div class="unit"><input id="age" type="number" inputmode="numeric" value="30"><span>歳</span></div></div>
+        <div class="field"><label for="weight">今の体重</label><div class="unit"><input id="weight" type="number" inputmode="decimal" step="0.1" value="75"><span>kg</span></div></div>
+        <div class="field"><label for="target">なりたい体重</label><div class="unit"><input id="target" type="number" inputmode="decimal" step="0.1" value="68"><span>kg</span></div></div>
+        <div class="field full">
+          <label for="activity">ふだんの活動量（ジム以外）</label>
+          <select id="activity">
+            <option value="1.2">ほぼ座っている（デスクワーク・車移動）</option>
+            <option value="1.375" selected>ふつう（通勤で歩く・家事）</option>
+            <option value="1.55">よく動く（立ち仕事・肉体労働）</option>
+          </select>
+        </div>
+        <div class="field full">
+          <span class="lbl">ジムに行ける日数（週）</span>
+          <div class="seg">
+            <label><input type="radio" name="days" id="days-2" value="2"><span>2日</span></label>
+            <label><input type="radio" name="days" id="days-3" value="3" checked><span>3日</span></label>
+            <label><input type="radio" name="days" id="days-4" value="4"><span>4日</span></label>
+            <label><input type="radio" name="days" id="days-5" value="5"><span>5日</span></label>
+          </div>
+        </div>
+        <div class="field full">
+          <span class="lbl">筋トレ経験</span>
+          <div class="seg">
+            <label><input type="radio" name="level" id="level-b" value="b" checked><span>初めて・久しぶり</span></label>
+            <label><input type="radio" name="level" id="level-e" value="e"><span>半年以上続けている</span></label>
+          </div>
+        </div>
+        <div class="field full">
+          <span class="lbl">ペース</span>
+          <div class="seg">
+            <label><input type="radio" name="pace" id="pace-1" value="0"><span>ゆるやか</span></label>
+            <label><input type="radio" name="pace" id="pace-2" value="1" checked><span>標準</span></label>
+            <label><input type="radio" name="pace" id="pace-3" value="2"><span>しっかり</span></label>
+          </div>
+          <p class="hint">減量の場合 1週間に体重の約0.5% / 0.75% / 1% を落とすペースです。</p>
+        </div>
+      </div>
+      <button class="btn" type="submit">プランを作成</button>
+      <div class="msg" id="msg" hidden></div>
+    </form>
+
+    <main class="out" id="out"></main>
+  </div>
+
+  <p class="foot">このアプリの数値は一般的な計算式（Mifflin-St Jeor式など）に基づく目安です。持病がある方・妊娠中の方・通院中の方は医師に相談してから始めてください。トレーニング中に痛みやめまいを感じたらすぐに中止してください。マシンの重さの表記はジムや機種によって異なるため、表示の重さは「最初に試す重さ」として使い、フォームが崩れない重さに調整してください。</p>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const DOW = ['月','火','水','木','金','土','日'];
+
+/* ---------- マシン・種目データ ---------- */
+// coef: 体重に対する初回重量の目安 [男性, 女性]
+const EX = {
+  legpress:  {name:'レッグプレス', muscle:'太もも・お尻', coef:[1.0,0.75], big:true,
+    cues:['足は肩幅で、フットプレートの中央に置く','膝はつま先と同じ向きに曲げ、伸ばし切らない','お尻がシートから浮かない深さまで下ろす']},
+  chestpress:{name:'チェストプレス', muscle:'胸・二の腕', coef:[0.35,0.18], big:true,
+    cues:['グリップが胸の中央の高さに来るようシートを調整','肩をすくめず、胸を張ったまま押す','戻すときは2秒かけてゆっくり']},
+  latpull:   {name:'ラットプルダウン', muscle:'背中（広背筋）', coef:[0.45,0.28], big:true,
+    cues:['太ももパッドで体を固定し、手幅は肩幅の約1.5倍','胸を張り、バーを鎖骨の方へ引く','腕で引くより「肘を下げる」意識で']},
+  seatedrow: {name:'シーテッドロー', muscle:'背中の中部', coef:[0.4,0.25], big:true,
+    cues:['胸をパッドに当てて背すじを伸ばす','肩甲骨を寄せるように肘を後ろへ引く','戻すときも背中を丸めない']},
+  shoulder:  {name:'ショルダープレス', muscle:'肩', coef:[0.22,0.12],
+    cues:['グリップが肩の高さに来るようシートを調整','背もたれに背中をつけ、腰を反らさない','肘を伸ばし切る手前で止める']},
+  pecfly:    {name:'ペックフライ', muscle:'胸', coef:[0.25,0.14],
+    cues:['肘は軽く曲げたまま固定する','胸の前で手を合わせるように閉じる','開くときは胸が伸びる所まで、ゆっくり']},
+  legext:    {name:'レッグエクステンション', muscle:'太もも前', coef:[0.3,0.2],
+    cues:['膝の関節とマシンの回転軸を合わせる','足首のパッドはすねの下端に当てる','上で1秒止めてからゆっくり下ろす']},
+  legcurl:   {name:'レッグカール', muscle:'太もも裏', coef:[0.25,0.17],
+    cues:['膝の関節とマシンの回転軸を合わせる','かかとをお尻に近づけるように曲げる','腰が浮かないようグリップを握る']},
+  abduction: {name:'アブダクション', muscle:'お尻の横', coef:[0.4,0.35],
+    cues:['背もたれに寄りかかり、骨盤を立てる','膝の外側でパッドを押し広げる','閉じるときにプレートを当てて鳴らさない']},
+  pushdown:  {name:'ケーブルプッシュダウン', muscle:'二の腕の裏', coef:[0.15,0.08],
+    cues:['肘を脇腹に固定する','肘から先だけを動かし、下まで伸ばす','上げるのは肘が浮かない所まで']},
+  armcurl:   {name:'アームカール（マシン）', muscle:'力こぶ', coef:[0.14,0.08],
+    cues:['脇をパッドに密着させる','反動を使わず、肘を支点に巻き上げる','下ろすときに2秒かける']},
+  abcrunch:  {name:'アブドミナルクランチ', muscle:'腹筋', coef:[0.25,0.15], reps:'15–20',
+    cues:['息を吐きながら、おへそを覗き込むように丸める','腕の力で引かない','戻すときも力を抜き切らない'], alt:'マシンがなければ床でクランチ 15回'},
+  backext:   {name:'バックエクステンション', muscle:'腰・お尻', bw:'自重', reps:'10–15',
+    cues:['骨盤の位置にパッドを合わせる','体が一直線になる所まで起こす（反りすぎない）','腕は胸の前で組み、ゆっくり動く'], alt:'台がなければ床でうつ伏せの背筋 12回'},
+  plank:     {name:'プランク', muscle:'体幹', bw:'自重', time:true,
+    cues:['肘は肩の真下につく','頭からかかとまで一直線','お尻が上がる・下がるようなら休む']},
+};
+
+const SESS = {
+  A:{name:'全身A', list:['legpress','chestpress','latpull','legcurl','abcrunch']},
+  B:{name:'全身B', list:['legext','seatedrow','shoulder','abduction','backext','plank']},
+  C:{name:'全身C', list:['legpress','pecfly','latpull','legcurl','plank']},
+  U1:{name:'上半身①', list:['chestpress','latpull','shoulder','seatedrow','pushdown']},
+  L1:{name:'下半身①', list:['legpress','legcurl','legext','abduction','abcrunch']},
+  U2:{name:'上半身②', list:['pecfly','seatedrow','latpull','shoulder','armcurl']},
+  L2:{name:'下半身②', list:['legpress','legcurl','abduction','backext','plank']},
+  X:{name:'有酸素＋体幹', list:['backext','abcrunch','plank'], cardioOnly:true},
+};
+const SPLIT = {
+  2:{days:[1,4], s:['A','B']},
+  3:{days:[0,2,4], s:['A','B','C']},
+  4:{days:[0,1,3,4], s:['U1','L1','U2','L2']},
+  5:{days:[0,1,2,4,5], s:['U1','L1','X','U2','L2']},
+};
+
+/* ---------- 計算 ---------- */
+function build(i){
+  const h = i.height/100, sx = i.sex==='m'?0:1;
+  const bmi = i.weight/(h*h), tbmi = i.target/(h*h);
+  const bmr = 10*i.weight + 6.25*i.height - 5*i.age + (i.sex==='m'?5:-161);
+  const refW = Math.min(i.weight, 25*h*h);               // 高BMIでもタンパク質・重量が過大にならないよう
+  const trainPerDay = i.weight*4*i.days/7;               // 1回のジム ≈ 体重×4kcal
+  const tdee = bmr*i.activity + trainPerDay;
+  const diff = i.target - i.weight;
+  const goal = Math.abs(diff) < 1 ? 'keep' : diff < 0 ? 'lose' : 'gain';
+  const notes = [];
+  let kcal, weekly, weeks;
+  if (goal==='lose'){
+    weekly = i.weight*[0.005,0.0075,0.01][i.pace];
+    kcal = tdee - weekly*7200/7;
+    const floor = Math.max(bmr, i.sex==='m'?1500:1200);
+    if (kcal < floor){
+      kcal = floor;
+      weekly = Math.max((tdee-kcal)*7/7200, 0.1);
+      notes.push(['info','摂取カロリーが基礎代謝を下回らないよう下限を設けたため、予定より緩やかなペースになっています。1日の歩数を増やすとペースを上げられます。']);
+    }
+    weeks = Math.ceil(-diff/weekly);
+  } else if (goal==='gain'){
+    weekly = [0.15,0.25,0.35][i.pace];
+    kcal = tdee + weekly*7200/7;
+    weeks = Math.ceil(diff/weekly);
+  } else {
+    weekly = 0; kcal = tdee; weeks = 12;
+  }
+  kcal = Math.round(kcal/10)*10;
+  const protein = Math.round(refW*(goal==='keep'?1.6:1.8));
+  const fat = Math.round(kcal*0.25/9);
+  const carb = Math.max(0, Math.round((kcal - protein*4 - fat*9)/4));
+
+  if (tbmi < 17.5) notes.unshift(['bad',`なりたい体重のBMIは ${tbmi.toFixed(1)} で「やせ」の範囲です。健康を損なうおそれがあるため、目標体重を ${(18.5*h*h).toFixed(1)}kg 以上にすることをおすすめします。`]);
+  else if (tbmi < 18.5) notes.unshift(['warn',`なりたい体重のBMIは ${tbmi.toFixed(1)} で、標準（18.5〜25）より少し低めです。体調の変化に注意してください。`]);
+  if (i.age < 18) notes.push(['warn','18歳未満の方は成長期のため、食事制限をせず、トレーニング中心で進めてください。']);
+  if (weeks > 78) notes.push(['info',`ゴールまで1年半以上かかる計画です。まずは3か月後の ${mile(i.weight,diff,weekly,13).toFixed(1)}kg を最初の目標にしましょう。`]);
+
+  // トレーニング
+  const beg = i.level==='b';
+  const ageF = i.age>=60?0.8:i.age>=45?0.9:1;
+  const split = SPLIT[i.days];
+  const sessions = split.s.map((k,idx)=>{
+    const s = SESS[k];
+    const ex = s.list.map(id=>{
+      const e = EX[id];
+      let load = null;
+      if (e.coef){
+        const raw = refW*e.coef[sx]*(beg?0.75:1)*ageF;
+        load = raw>20 ? Math.max(5,Math.round(raw/5)*5) : Math.max(2.5,Math.round(raw/2.5)*2.5);
+      }
+      const sets = beg ? 3 : (goal==='gain' && e.big ? 4 : 3);
+      const reps = e.time ? (beg?'30秒':'45–60秒') : e.reps ? e.reps : beg ? '12–15' : goal==='gain' && e.big ? '8–10' : '10–12';
+      const rest = e.big ? (beg?'90秒':'2分') : '60秒';
+      return {...e, id, load, sets, reps, rest};
+    });
+    return {key:k, name:s.name, dow:split.days[idx], ex, cardioOnly:!!s.cardioOnly};
+  });
+  const hrMax = 220 - i.age;
+  const cardio = goal==='lose'
+    ? {speed: i.age>=60?4.5:5.0, incline: beg?6:10, min: beg?'20':'30'}
+    : goal==='keep' ? {speed:5.0, incline:6, min:'15–20'} : {speed:5.0, incline:3, min:'10'};
+  const cardioDay = {speed: i.age>=60?4.5:5.0, incline: beg?8:12, min: beg?'30':'40'};
+
+  return {i, bmi, tbmi, bmr, tdee, trainPerDay, goal, diff, weekly, weeks, kcal, protein, fat, carb, notes, sessions,
+    beg, hr:[Math.round(hrMax*0.6), Math.round(hrMax*0.7)], cardio, cardioDay, blocked: tbmi < 17.5 && goal==='lose'};
+}
+function mile(w, diff, weekly, wk){
+  const d = Math.min(Math.abs(diff), weekly*wk);
+  return w + Math.sign(diff)*d;
+}
+function dateAfter(weeks){
+  const d = new Date(); d.setDate(d.getDate()+weeks*7);
+  return `${d.getFullYear()}年${d.getMonth()+1}月`;
+}
+const f1 = v => (Math.round(v*10)/10).toFixed(1);
+const fmt = v => Math.round(v).toLocaleString('ja-JP');
+
+/* ---------- 描画 ---------- */
+let P = null, tab = 'train', dayIdx = 0, isExample = true;
+
+function render(){
+  const p = P, out = $('#out');
+  const sign = p.diff < 0 ? '−' : '+';
+  const goalWord = {lose:'減量', gain:'増量', keep:'キープ＆引き締め'}[p.goal];
+  let h = '';
+  if (isExample) h += `<p class="banner">例として「170cm・75kg・30歳の男性が68kgを目指す」プランを表示しています。左のフォームにあなたの数値を入れて「プランを作成」を押してください。</p>`;
+  h += p.notes.map(([c,t])=>`<p class="alert ${c}">${t}</p>`).join('');
+
+  if (p.blocked){
+    out.innerHTML = h; return;
+  }
+  h += `<section class="hero">
+    <div class="route">
+      <div class="w num">${f1(p.i.weight)}<small>kg</small></div>
+      <div class="arrow">${p.goal==='keep'?'維持':`<b>${sign}${f1(Math.abs(p.diff))}kg</b>${p.weeks}週間`}<span aria-hidden="true">→</span></div>
+      <div class="w num goal">${f1(p.i.target)}<small>kg</small></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">期間</div><div class="v">${p.goal==='keep'?'—':p.weeks}<small>${p.goal==='keep'?'':'週'}</small></div><div class="s">${p.goal==='keep'?'体重を保ちながら引き締め':dateAfter(p.weeks)+'ごろ達成'}</div></div>
+      <div class="stat"><div class="k">1日の摂取目安</div><div class="v">${fmt(p.kcal)}<small>kcal</small></div><div class="s">消費 約${fmt(p.tdee)}kcal</div></div>
+      <div class="stat"><div class="k">1週間のペース</div><div class="v">${p.goal==='keep'?'±0':sign+f1(p.weekly)}<small>kg</small></div><div class="s">${goalWord}</div></div>
+      <div class="stat"><div class="k">ジム</div><div class="v">週${p.i.days}<small>回</small></div><div class="s">1回 約${sessionMin(p.sessions[0])}分</div></div>
+    </div>
+  </section>`;
+  h += chart(p);
+  h += `<div class="tabs" role="tablist">
+    ${[['train','トレーニング'],['food','食事'],['guide','進め方']].map(([k,l])=>`<button class="tab" role="tab" id="tab-${k}" aria-selected="${tab===k}" data-tab="${k}">${l}</button>`).join('')}
+  </div><div class="pane" id="pane">${tab==='train'?train(p):tab==='food'?food(p):guide(p)}</div>`;
+  out.innerHTML = h;
+}
+
+function sessionMin(s){
+  if (s.cardioOnly) return 5 + parseInt(P.cardioDay.min) + 15;
+  const lift = s.ex.reduce((a,e)=>a + e.sets*(0.75 + (e.rest==='2分'?2:e.rest==='90秒'?1.5:1)), 0);
+  return Math.round((5 + lift + parseInt(P.cardio.min) + 5)/5)*5;
+}
+
+function chart(p){
+  const W=640,H=220,m={l:40,r:20,t:18,b:30};
+  const weeks = p.weeks;
+  const lo = Math.min(p.i.weight,p.i.target), hi = Math.max(p.i.weight,p.i.target);
+  const y0 = Math.floor(lo-1), y1 = Math.ceil(hi+1);
+  const X = w => m.l + (W-m.l-m.r)*w/weeks;
+  const Y = v => m.t + (H-m.t-m.b)*(y1-v)/(y1-y0);
+  const xs = [1,2,4,8,12,16,26,52].find(s=>weeks/s<=6) || 52;
+  const ys = [0.5,1,2,5,10,20].find(s=>(y1-y0)/s<=5) || 20;
+  let g = '';
+  for (let v=Math.ceil(y0/ys)*ys; v<=y1+1e-9; v+=ys){
+    g += `<line x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1"/>`+
+         `<text x="${m.l-8}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${v%1?v.toFixed(1):v}</text>`;
+  }
+  for (let w=0; w<=weeks; w+=xs){
+    g += `<text x="${X(w)}" y="${H-10}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${w}週</text>`;
+  }
+  const x0=X(0), yA=Y(p.i.weight), x1=X(weeks), yB=Y(p.i.target), base=Y(y0);
+  const ms = [4,13,26].filter(w=>w<weeks);
+  const dots = ms.map(w=>{const v=mile(p.i.weight,p.diff,p.weekly,w);return `<circle cx="${X(w)}" cy="${Y(v)}" r="3.5" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>`}).join('');
+  const lx = Math.min(x1, W-m.r-4);
+  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="体重の予定推移: ${f1(p.i.weight)}kgから${weeks}週で${f1(p.i.target)}kg">
+    ${g}
+    <line x1="${m.l}" x2="${W-m.r}" y1="${yB}" y2="${yB}" stroke="var(--accent)" stroke-dasharray="4 4" stroke-width="1" opacity=".6"/>
+    <polygon points="${x0},${base} ${x0},${yA} ${x1},${yB} ${x1},${base}" fill="var(--accent)" opacity=".1"/>
+    <line x1="${x0}" y1="${yA}" x2="${x1}" y2="${yB}" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+    ${dots}
+    <circle cx="${x0}" cy="${yA}" r="4.5" fill="var(--ink)"/>
+    <circle cx="${x1}" cy="${yB}" r="6" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>
+    <text x="${lx}" y="${yB + (p.diff<0?-12:20)}" text-anchor="end" font-size="12" font-weight="700" fill="var(--accent)" font-family="IBM Plex Mono,monospace">${f1(p.i.target)}kg</text>
+  </svg>`;
+  const chips = p.goal==='keep' ? '' : `<div class="miles">${ms.map(w=>`<span>${w===4?'1か月後':w===13?'3か月後':'半年後'} <b>${f1(mile(p.i.weight,p.diff,p.weekly,w))}kg</b></span>`).join('')}<span>ゴール ${dateAfter(weeks)} <b>${f1(p.i.target)}kg</b></span></div>`;
+  return `<div class="chartbox"><h3>体重の予定推移</h3>${svg}${chips}<p class="note" style="margin-top:6px">実際の体重は水分などで日々1kg前後上下します。週1回・同じ条件（朝・トイレ後）で測り、週の平均で判断してください。</p></div>`;
+}
+
+function train(p){
+  const today = (new Date().getDay()+6)%7;
+  const byDow = {}; p.sessions.forEach((s,i)=>byDow[s.dow]=i);
+  let h = `<div class="week" role="group" aria-label="1週間の予定">`;
+  for (let d=0; d<7; d++){
+    const si = byDow[d];
+    if (si===undefined) h += `<div class="dayb rest"><span class="d">${DOW[d]}</span><span class="n">休み</span>${d===today?'<span class="today">今日</span>':''}</div>`;
+    else h += `<button class="dayb" data-day="${si}" aria-pressed="${si===dayIdx}"><span class="d">${DOW[d]}</span><span class="n">${p.sessions[si].name}</span>${d===today?'<span class="today">今日</span>':''}</button>`;
+  }
+  h += `</div>`;
+  const s = p.sessions[dayIdx];
+  h += `<div class="session-head"><h3>${DOW[s.dow]}曜日 ${s.name}</h3><span class="meta">所要 約${sessionMin(s)}分</span></div>`;
+  h += `<div class="flow"><span>① ウォームアップ：エアロバイク <b>5</b>分</span>${s.cardioOnly?'<span>② 有酸素</span><span>③ 体幹</span>':'<span>② 筋トレ（上から順に）</span><span>③ 有酸素</span>'}<span>④ ストレッチ <b>5</b>分</span></div>`;
+  if (p.beg && !s.cardioOnly) h += `<p class="alert info">最初の2週間は各種目 <b>2セット</b> でOK。フォームを覚えることを優先し、3週目から3セットにしましょう。</p>`;
+  const cardioBlock = c => `<div class="cardio"><h4>トレッドミル（傾斜ウォーキング）</h4>
+    <p class="rx">時速 <b>${c.speed.toFixed(1)}</b>km ／ 傾斜 <b>${c.incline}</b>% ／ <b>${c.min}</b>分</p>
+    <p class="small">心拍数 ${P.hr[0]}〜${P.hr[1]}拍/分（会話ができるくらいのきつさ）を目安に。手すりにつかまらずに歩ける傾斜まで下げてOK。トレッドミルが空いていなければクロストレーナーでも同じ時間。</p></div>`;
+  if (s.cardioOnly) h += cardioBlock(p.cardioDay);
+  h += `<ol class="exlist">` + s.ex.map((e,n)=>{
+    const key = `${s.key}-${e.id}`;
+    const sets = Array.from({length:e.sets},(_,k)=>`<label class="setc"><input type="checkbox" id="set-${key}-${k}" data-k="${key}-${k}" ${done[`${key}-${k}`]?'checked':''}><span>${k+1}セット目</span></label>`).join('');
+    return `<li class="ex">
+      <span class="no">${n+1}</span>
+      <div><h4>${e.name}</h4><p class="muscle">${e.muscle}</p></div>
+      ${e.load!==null && e.load!==undefined ? `<div class="plate" title="最初に試す重さ"><b>${e.load}</b><small>kg〜</small></div>` : `<div class="plate bw"><b>${e.bw}</b></div>`}
+      <div class="rx"><span><span class="big">${e.sets}</span> セット × <span class="big">${e.reps}</span>${e.time?'':' 回'}</span><span class="rest">セット間の休憩 ${e.rest}</span></div>
+      <details><summary>フォームのポイント</summary><ul>${e.cues.map(c=>`<li>${c}</li>`).join('')}</ul></details>
+      ${e.alt?`<p class="alt">${e.alt}</p>`:''}
+      <div class="sets">${sets}</div>
+    </li>`;
+  }).join('') + `</ol>`;
+  if (!s.cardioOnly) h += cardioBlock(p.cardio);
+  h += `<p class="small">重さは「あと2〜3回できそう」で終わる重さが正解です。表示の重さで軽すぎ・重すぎなら、その日のうちに調整してメモしておきましょう。</p>`;
+  return h;
+}
+
+function food(p){
+  const pk=p.protein*4, fk=p.fat*9, ck=p.carb*4, tot=pk+fk+ck;
+  const per = Math.round(p.protein/3);
+  return `<div class="cols">
+    <div class="card"><h3>1日の目安 <span class="num">${fmt(p.kcal)}</span> kcal</h3>
+      <div class="pfc" aria-hidden="true"><i style="width:${pk/tot*100}%;background:var(--accent)"></i><i style="width:${fk/tot*100}%;background:var(--plate)"></i><i style="width:${ck/tot*100}%;background:var(--good)"></i></div>
+      <div class="legend">
+        <div><span><i class="sw" style="background:var(--accent)"></i>タンパク質</span><span class="num">${p.protein} g</span></div>
+        <div><span><i class="sw" style="background:var(--plate)"></i>脂質</span><span class="num">${p.fat} g</span></div>
+        <div><span><i class="sw" style="background:var(--good)"></i>炭水化物</span><span class="num">${p.carb} g</span></div>
+      </div>
+      <p class="small" style="margin-top:10px">基礎代謝 ${fmt(p.bmr)}kcal ×活動量 ＋ ジム分 約${fmt(p.trainPerDay)}kcal/日 ＝ 消費 約${fmt(p.tdee)}kcal。${p.goal==='lose'?'ここから差し引いた分が脂肪の減少になります。':p.goal==='gain'?'少し多めに食べて筋肉をつけます。':''}</p>
+    </div>
+    <div class="card"><h3>タンパク質は1食 約<span class="num">${per}</span>g</h3>
+      <table><thead><tr><th>食品</th><th class="r">量</th><th class="r">タンパク質</th></tr></thead><tbody>
+        <tr><td>鶏むね肉（皮なし）</td><td class="r">100g</td><td class="r">23g</td></tr>
+        <tr><td>鮭</td><td class="r">1切れ</td><td class="r">18g</td></tr>
+        <tr><td>ギリシャヨーグルト</td><td class="r">1個</td><td class="r">10g</td></tr>
+        <tr><td>木綿豆腐</td><td class="r">150g</td><td class="r">10g</td></tr>
+        <tr><td>納豆</td><td class="r">1パック</td><td class="r">8g</td></tr>
+        <tr><td>卵</td><td class="r">1個</td><td class="r">6g</td></tr>
+      </tbody></table>
+    </div>
+    <div class="card"><h3>続けるためのコツ</h3><ul class="tips">
+      <li>毎食「手のひら1枚分」の肉・魚・卵・大豆製品を入れる</li>
+      <li>ご飯はなくさない。${p.goal==='lose'?'1食 茶碗に軽く1杯（150g）が目安':'1食 茶碗1杯（200g）以上'}</li>
+      <li>ジムの日はトレーニング後1〜2時間以内に食事をとる</li>
+      <li>ジュース・お酒はカロリーが多いので、まず飲み物から見直す</li>
+      <li>${p.goal==='lose'?'1日 8,000歩以上歩くと、食事を減らしすぎずに済む':'食が細い人は1日4〜5回に分けて食べる'}</li>
+    </ul></div>
+  </div>`;
+}
+
+function guide(p){
+  const steps = [
+    ['1〜2週目','フォームを覚える', p.beg?'各種目2セット、表示より軽めでもOK。マシンのシート位置をスマホにメモしておくと次回が楽です。':'表示の重さで全セットこなせるか確認し、重さを決めます。'],
+    ['3〜4週目','決まったメニューをこなす','全種目を規定セット数で。ジムに行く曜日を固定して、習慣にします。'],
+    ['5週目〜','少しずつ重くする','全セットで回数の上限（例：15回）ができたら、次回から重さを1段階（2.5〜5kg）上げ、回数は下限からやり直します。'],
+    ['4週ごと','体重をチェック', p.goal==='lose'?`2週続けて体重が減らなければ、摂取カロリーを100kcal減らすか、1日の歩数を2,000歩増やします。`:p.goal==='gain'?'2週続けて体重が増えなければ、摂取カロリーを150kcal増やします。':'体重を保ちつつ、ウエストや見た目の変化で判断します。'],
+    ['8〜12週ごと','軽めの1週間を入れる','疲れが抜けないときは重さを7割に落とす週を入れると、ケガを防げて次の週から伸びやすくなります。'],
+  ];
+  return `<ol class="steps">${steps.map(([w,t,d])=>`<li><span class="when">${w}</span><div><h4>${t}</h4><p>${d}</p></div></li>`).join('')}</ol>
+    <p class="small">BMI：今 ${p.bmi.toFixed(1)} → 目標 ${p.tbmi.toFixed(1)}（標準は18.5〜25）</p>`;
+}
+
+/* ---------- 入力・保存 ---------- */
+let done = {};
+const doneKey = () => 'gym-done-' + new Date().toISOString().slice(0,10);
+function store(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function load(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+
+function readForm(){
+  const r = n => document.querySelector(`input[name=${n}]:checked`).value;
+  return {sex:r('sex'), height:+$('#height').value, weight:+$('#weight').value, age:+$('#age').value,
+    target:+$('#target').value, activity:+$('#activity').value, days:+r('days'), level:r('level'), pace:+r('pace')};
+}
+function writeForm(v){
+  ['height','weight','age','target','activity'].forEach(k=>$('#'+k).value=v[k]);
+  [['sex',v.sex],['days',v.days],['level',v.level],['pace',v.pace]].forEach(([n,val])=>{
+    const el = document.querySelector(`input[name=${n}][value="${val}"]`); if (el) el.checked = true;
+  });
+}
+function validate(v){
+  if (!(v.height>=120 && v.height<=220)) return '身長は120〜220cmの範囲で入力してください。';
+  if (!(v.weight>=30 && v.weight<=250)) return '今の体重は30〜250kgの範囲で入力してください。';
+  if (!(v.target>=30 && v.target<=250)) return 'なりたい体重は30〜250kgの範囲で入力してください。';
+  if (!(v.age>=13 && v.age<=90)) return '年齢は13〜90歳の範囲で入力してください。';
+  return null;
+}
+function pickToday(){
+  const today = (new Date().getDay()+6)%7;
+  const i = P.sessions.findIndex(s=>s.dow>=today);
+  dayIdx = i<0 ? 0 : i;
+}
+
+$('#form').addEventListener('submit', e=>{
+  e.preventDefault();
+  const v = readForm(), err = validate(v);
+  $('#msg').hidden = !err; $('#msg').textContent = err || '';
+  if (err) return;
+  isExample = false;
+  store('gym-input', v);
+  P = build(v); pickToday(); render();
+  if (window.innerWidth < 880) $('#out').scrollIntoView({behavior:'smooth', block:'start'});
+});
+$('#out').addEventListener('click', e=>{
+  const t = e.target.closest('[data-tab],[data-day]');
+  if (!t) return;
+  if (t.dataset.tab){ tab = t.dataset.tab; store('gym-tab', tab); }
+  else dayIdx = +t.dataset.day;
+  render();
+});
+$('#out').addEventListener('change', e=>{
+  const k = e.target.dataset && e.target.dataset.k;
+  if (!k) return;
+  done[k] = e.target.checked; store(doneKey(), done);
+});
+
+(function init(){
+  const saved = load('gym-input');
+  if (saved && !validate(saved)){ writeForm(saved); isExample = false; }
+  tab = load('gym-tab') || 'train';
+  done = load(doneKey()) || {};
+  P = build(readForm()); pickToday(); render();
+})();
+</script>
